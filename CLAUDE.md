@@ -1,4 +1,4 @@
-# CLAUDE.md – Allenati in sessione
+# CLAUDE.md – Balance
 
 App personale di Matteo (studente di Ingegneria Informatica, si allena in palestra e corre): organizza palestra e corsa in base al calendario degli esami e a come si sente ogni giorno. Progetto a tempo perso, senza scadenze, fatto per imparare.
 
