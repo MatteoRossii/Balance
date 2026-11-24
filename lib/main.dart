@@ -1,125 +1,113 @@
+// ============================================================
+// main.dart – punto di ingresso dell'app Balance
+//
+// Il file ha 3 parti, dall'alto verso il basso:
+//   1. main()            -> avvia l'app
+//   2. MyApp             -> impostazioni generali (titolo, tema)
+//   3. Navigazione       -> barra in basso + schermata mostrata
+// ============================================================
+
 import 'package:flutter/material.dart';
 
+// Importa i colori e lo stile (card, pulsanti, barra) da lib/tema.dart.
+import 'tema.dart';
+
+// --- 1. AVVIO -------------------------------------------------
+// Flutter parte sempre da main(). runApp() mette MyApp sullo schermo.
 void main() {
   runApp(const MyApp());
 }
 
+// --- 2. IMPOSTAZIONI GENERALI ---------------------------------
+// Qui NON si disegnano schermate: si configurano solo le cose
+// che valgono per tutta l'app.
+// DOVE OPERARE: titolo della scheda del browser, tema, prima schermata.
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      // Toglie il nastro "DEBUG" in alto a destra durante lo sviluppo.
+      debugShowCheckedModeBanner: false,
+      // Nome che compare nella scheda del browser.
       title: 'BALANCE',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      // Colori e stile: sono definiti in lib/tema.dart.
+      theme: temaBalance,
+      // Prima schermata mostrata all'avvio: la nostra barra di navigazione.
+      home: const Navigazione(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+// --- 3. NAVIGAZIONE -------------------------------------------
+// È uno StatefulWidget perché deve ricordare quale sezione è
+// selezionata, e quel valore cambia quando tocchi la barra.
+// Un StatefulWidget si scrive sempre in due classi:
+//   - Navigazione       -> la "configurazione" (sotto)
+//   - _NavigazioneState -> i dati che cambiano + il metodo build
+class Navigazione extends StatefulWidget {
+  const Navigazione({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<Navigazione> createState() => _NavigazioneState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _NavigazioneState extends State<Navigazione> {
+  // Sezione selezionata: 0 = Oggi, 1 = Scheda, 2 = Calendario, 3 = Progressi.
+  // L'ordine deve coincidere con quello delle voci in `destinations`.
+  int _indiceSelezionato = 0;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  // Per ora ogni sezione è solo un testo segnaposto.
+  // DOVE OPERARE: quando crei le schermate vere (es. SchermataScheda),
+  // questa lista di testi diventerà una lista di widget, nello stesso ordine.
+  final List<String> _titoli = ['Oggi', 'Scheda', 'Calendario', 'Progressi'];
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    // Scaffold = scheletro di una schermata: un corpo (body)
+    // e, in basso, la barra di navigazione.
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'Benvenuto in Balance',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+      // ---- CORPO: la schermata della sezione selezionata ----
+      // SafeArea tiene il contenuto lontano da notch e barra di sistema dell'iPhone.
+      body: SafeArea(
+        // Su schermi larghi il contenuto non supera 500 e resta centrato.
+        // Il Center esterno mette la colonna da 500 al centro dello schermo;
+        // ConstrainedBox pone il limite di larghezza.
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            // DOVE OPERARE: qui dentro va il contenuto della sezione scelta.
+            // Il Center interno serve solo per il testo segnaposto: con una
+            // ListView di card si toglie.
+            child: Center(child: Text(_titoli[_indiceSelezionato])),
+          ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+
+      // ---- BARRA IN BASSO ----
+      // Sta fuori dal body, quindi resta larga quanto lo schermo.
+      bottomNavigationBar: NavigationBar(
+        // Quale voce è evidenziata.
+        selectedIndex: _indiceSelezionato,
+        // Chiamata quando tocchi una voce; `indice` è la posizione toccata.
+        // setState dice a Flutter di ridisegnare con il nuovo valore:
+        // senza setState il numero cambierebbe ma lo schermo no.
+        onDestinationSelected: (indice) {
+          setState(() => _indiceSelezionato = indice);
+        },
+        // Le 4 voci. DOVE OPERARE: per cambiare icone o nomi delle sezioni.
+        // Se ne aggiungi o togli una, aggiorna anche `_titoli` sopra.
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.today), label: 'Oggi'),
+          NavigationDestination(
+              icon: Icon(Icons.fitness_center), label: 'Scheda'),
+          NavigationDestination(
+              icon: Icon(Icons.calendar_month), label: 'Calendario'),
+          NavigationDestination(
+              icon: Icon(Icons.show_chart), label: 'Progressi'),
+        ],
+      ),
     );
   }
 }

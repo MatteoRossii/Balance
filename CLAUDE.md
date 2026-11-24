@@ -23,6 +23,17 @@ Logica a regole "se... allora..." leggibili e facili da modificare, **separate d
 **Importante:** gli esami NON devono mai ridurre volume o intensità dell'allenamento; generano solo un promemoria sullo studio.
 Ordine di costruzione: Scheda → Oggi → Calendario → Progressi e scarico.
 
+## Grafica (approvata)
+Riferimento: https://claude.ai/artifact/TBZUWAQA5rn7J1NQTNkHdN (4 schermate iPhone 390×844).
+- Colori: principale `#0E7C66`, principale scuro `#0A5E4D`, sfondo `#F6F7F5`, card `#FFFFFF` con bordo `#E4E8E6`, testo `#17201D`, testo secondario `#5B6661`, verde chiaro `#E3F2EE`, promemoria esami sfondo `#FDF3E1` / testo `#8A5300`.
+- Font: Inter. Titolo pagina 28 grassetto, titoli card 17 semibold, testo 14-15.
+- Card con angoli arrotondati 20, padding 20, spazio tra blocchi 16; pulsanti alti almeno 48 con angoli 14.
+- Barra di navigazione in basso (Material 3 `NavigationBar`): Oggi, Scheda, Calendario, Progressi.
+- **Oggi**: "Bentornato in Balance" + data; check-in "Come ti senti oggi?" (scala 1-5: Distrutto, Stanco, Normale, Bene, Al top), "Hai dolori muscolari?" Sì/No, se Sì scelta multipla dei muscoli (Petto, Schiena, Spalle, Bicipiti, Tricipiti, Addome, Quadricipiti, Femorali, Glutei, Polpacci), pulsante "Salva check-in"; card "Il consiglio di oggi"; card "Allenamento di oggi" con "Segna come fatto"; promemoria esame.
+- **Scheda**: settimana X di N con barra di avanzamento, selettore giorni A/B/C, elenco esercizi (serie × ripetizioni, kg), "+ Aggiungi esercizio", allegato scheda originale.
+- **Calendario**: mese con esami evidenziati e oggi cerchiato, elenco "Prossimi esami", "+ Aggiungi esame".
+- **Progressi**: allenamenti della settimana, settimane di programmazione, card Scarico (fine programmazione, giorni di indolenzimento di fila), grafico squat, tempi 5 km.
+
 ## Stile e responsive
 - Semplice ed estetica: Material 3, un colore principale, card arrotondate, molto spazio.
 - Deve funzionare su tutti gli iPhone: niente dimensioni fisse per i blocchi principali, `ListView` per lo scorrimento, `SafeArea`, larghezza massima ~500 centrata, testi dal `TextTheme`.
