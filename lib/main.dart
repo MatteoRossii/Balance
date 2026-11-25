@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 
 // Importa i colori e lo stile (card, pulsanti, barra) da lib/tema.dart.
 import 'tema.dart';
+import 'schermata_scheda.dart';
 
 // --- 1. AVVIO -------------------------------------------------
 // Flutter parte sempre da main(). runApp() mette MyApp sullo schermo.
@@ -80,7 +81,12 @@ class _NavigazioneState extends State<Navigazione> {
             // DOVE OPERARE: qui dentro va il contenuto della sezione scelta.
             // Il Center interno serve solo per il testo segnaposto: con una
             // ListView di card si toglie.
-            child: Center(child: Text(_titoli[_indiceSelezionato])),
+            // Se è selezionata "Scheda" (indice 1) mostra la schermata vera,
+            // altrimenti ancora il testo segnaposto.
+            // `? :` è un if/else in forma breve: condizione ? se vero : se falso
+            child: _indiceSelezionato == 1
+                ? const SchermataScheda()
+                : Center(child: Text(_titoli[_indiceSelezionato])),
           ),
         ),
       ),
