@@ -18,18 +18,18 @@ import 'tema.dart';
 final schedaEsempio = Scheda(
   dataInizio: DateTime(2026, 11, 3),
   durataSettimane: 8,
-  giorni: const [
-    GiornoAllenamento(nome: 'Giorno A', esercizi: [
+  giorni: [
+    GiornoAllenamento(nome: 'Giorno A', tipo: 'Upper', esercizi: [
       Esercizio(nome: 'Squat', serie: 4, ripetizioni: 8, carico: 60),
       Esercizio(nome: 'Panca piana', serie: 4, ripetizioni: 8, carico: 50),
     ]),
-    GiornoAllenamento(nome: 'Giorno B', esercizi: [
+    GiornoAllenamento(nome: 'Giorno B', tipo: 'Lower', esercizi: [
       Esercizio(nome: 'Stacco da terra', serie: 3, ripetizioni: 5, carico: 80),
       // Niente `carico:` → vale 0 grazie a `this.carico = 0` (corpo libero).
       Esercizio(nome: 'Trazioni', serie: 4, ripetizioni: 6),
       Esercizio(nome: 'Rematore', serie: 3, ripetizioni: 10, carico: 40),
     ]),
-    GiornoAllenamento(nome: 'Giorno C', esercizi: [
+    GiornoAllenamento(nome: 'Giorno C', tipo: 'Full-Body', esercizi: [
       Esercizio(nome: 'Lento avanti', serie: 4, ripetizioni: 8, carico: 30),
       Esercizio(nome: 'Affondi', serie: 3, ripetizioni: 10, carico: 20),
       Esercizio(nome: 'Plank', serie: 3, ripetizioni: 1),
@@ -105,7 +105,14 @@ class _SchermataSchedaState extends State<SchermataScheda> {
           showSelectedIcon: false,
         ),
         const SizedBox(height: 16), //lascia spazio tra i pulsanti e l'esercizio
-
+        Text(
+          giorno.tipo,
+          style: testi.titleMedium?.copyWith(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
         for (final esercizio in giorno.esercizi)
           Card(
             child: Padding(
@@ -145,6 +152,22 @@ class _SchermataSchedaState extends State<SchermataScheda> {
               ),
             ),
           ),
+        const SizedBox(height: 16),
+
+        // PROVA: aggiunge sempre lo stesso esercizio al giorno selezionato.
+        // Nel prossimo passo lo sostituiremo con un modulo da compilare.
+        FilledButton.icon(
+          onPressed: () {
+            setState(() {
+              giorno.esercizi.add(
+                const Esercizio(
+                    nome: 'Curl', serie: 3, ripetizioni: 10, carico: 12),
+              );
+            });
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('Aggiungi esercizio'),
+        ),
       ],
     );
   }

@@ -23,12 +23,14 @@ class Esercizio {
 // È il contenuto mostrato quando scegli A / B / C nella sezione Scheda.
 class GiornoAllenamento {
   final String nome; // es. "A" oppure "Petto e tricipiti"
+  final String tipo;
   final List<Esercizio> esercizi; // nell'ordine in cui si eseguono
 
   // Nessun valore predefinito: un giorno ha sempre un nome e una lista
   // di esercizi (al limite vuota: const [] mentre lo stai compilando).
   const GiornoAllenamento({
     required this.nome,
+    required this.tipo,
     required this.esercizi,
   });
 }
