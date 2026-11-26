@@ -62,6 +62,7 @@ class _SchermataSchedaState extends State<SchermataScheda> {
     // in tutta l'app invece di scrivere numeri sparsi.
     final testi = Theme.of(context).textTheme;
     final scheda = schedaEsempio;
+    final giorno = scheda.giorni[_giornoSelezionato];
 
     // ListView invece di Column: se i contenuti superano l'altezza
     // dello schermo (iPhone SE) si può scorrere invece di andare in errore.
@@ -103,6 +104,47 @@ class _SchermataSchedaState extends State<SchermataScheda> {
           // Toglie la ✓ accanto alla lettera selezionata.
           showSelectedIcon: false,
         ),
+        const SizedBox(height: 16), //lascia spazio tra i pulsanti e l'esercizio
+
+        for (final esercizio in giorno.esercizi)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  // SINISTRA: nome + serie × ripetizioni.
+                  // Expanded prende tutto lo spazio libero e spinge il peso a destra.
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          esercizio.nome,
+                          style: testi.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${esercizio.serie} × ${esercizio.ripetizioni}',
+                          style: testi.bodyMedium?.copyWith(
+                            color: coloreTestoSecondario,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // DESTRA: il peso, con lo stesso stile del nome.
+                  Text(
+                    '${esercizio.carico} kg',
+                    style: testi.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }
