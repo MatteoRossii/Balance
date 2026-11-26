@@ -55,6 +55,49 @@ class _SchermataSchedaState extends State<SchermataScheda> {
   // 0 = A, 1 = B, 2 = C. All'apertura è selezionato il primo.
   // NON è final: deve poter cambiare quando tocchi un altro giorno.
   int _giornoSelezionato = 0;
+  // Apre la finestra per inserire un nuovo esercizio.
+  // Per ora è vuota: i campi li aggiungiamo nei prossimi passi.
+  void _apriModuloEsercizio() {
+    // Il giorno a cui aggiungere l'esercizio (quello scelto con A/B/C).
+    final giorno = schedaEsempio.giorni[_giornoSelezionato];
+
+    // Qui ricordiamo cosa scrive l'utente nel campo "Nome".
+    // `var` e non `final`: il valore cambia a ogni lettera.
+    var nome = '';
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Nuovo esercizio'),
+          content: TextField(
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Nome'),
+            onChanged: (testo) => nome = testo,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Annulla'),
+            ),
+            TextButton(
+              onPressed: () {
+                // PROVVISORIO: serie e ripetizioni fisse finché
+                // non aggiungiamo i loro campi (sotto-passo 3).
+                setState(() {
+                  giorno.esercizi.add(
+                    Esercizio(nome: nome, serie: 3, ripetizioni: 10),
+                  );
+                });
+                Navigator.pop(context); // chiude la finestra
+              },
+              child: const Text('Salva'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -157,14 +200,7 @@ class _SchermataSchedaState extends State<SchermataScheda> {
         // PROVA: aggiunge sempre lo stesso esercizio al giorno selezionato.
         // Nel prossimo passo lo sostituiremo con un modulo da compilare.
         FilledButton.icon(
-          onPressed: () {
-            setState(() {
-              giorno.esercizi.add(
-                const Esercizio(
-                    nome: 'Curl', serie: 3, ripetizioni: 10, carico: 12),
-              );
-            });
-          },
+          onPressed: _apriModuloEsercizio,
           icon: const Icon(Icons.add),
           label: const Text('Aggiungi esercizio'),
         ),
