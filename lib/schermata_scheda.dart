@@ -64,16 +64,102 @@ class _SchermataSchedaState extends State<SchermataScheda> {
     // Qui ricordiamo cosa scrive l'utente nel campo "Nome".
     // `var` e non `final`: il valore cambia a ogni lettera.
     var nome = '';
+    var serieTesto = '';
+    var ripetizioniTesto = '';
+    var caricoTesto = '';
+
+    // "Telecomando" del modulo: con questa chiave, quando premi Salva,
+    // possiamo dire al Form "controlla tutti i campi".
+    final chiaveModulo = GlobalKey<FormState>();
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('Nuovo esercizio'),
-          content: TextField(
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'Nome'),
-            onChanged: (testo) => nome = testo,
+          content: Form(
+            key: chiaveModulo, // attacchiamo il "telecomando" al modulo
+            child: Column(
+              // La colonna occupa solo l'altezza che le serve,
+              // invece di allungarsi per tutto lo schermo.
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // TextFormField = TextField che sa farsi controllare dal Form.
+                TextFormField(
+                  autofocus: true,
+                  decoration: const InputDecoration(labelText: 'Nome'),
+                  onChanged: (testo) => nome = testo,
+                  // Il controllo: restituisce il messaggio d'errore,
+                  // oppure null se va tutto bene.
+                  validator: (testo) {
+                    if (testo == null || testo.trim().isEmpty) {
+                      return 'Scrivi il nome';
+                    }
+                    return null;
+                  },
+                ),
+                // Serie e Ripetizioni affiancate, metà spazio ciascuna.
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        // Su iPhone apre il tastierino numerico.
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Serie'),
+                        onChanged: (testo) => serieTesto = testo,
+                        validator: (testo) {
+                          // Proviamo a leggere un numero intero:
+                          // null se il campo è vuoto o non è un numero.
+                          final numero = int.tryParse(testo ?? '');
+                          if (numero == null || numero < 1) {
+                            return 'Almeno 1';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextFormField(
+                        keyboardType: TextInputType.number,
+                        decoration:
+                            const InputDecoration(labelText: 'Ripetizioni'),
+                        onChanged: (testo) => ripetizioniTesto = testo,
+                        // Stesso controllo delle serie.
+                        validator: (testo) {
+                          final numero = int.tryParse(testo ?? '');
+                          if (numero == null || numero < 1) {
+                            return 'Almeno 1';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                TextFormField(
+                  // Tastierino numerico con la virgola (per 62,5 kg).
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Kg (0 = corpo libero)',
+                  ),
+                  onChanged: (testo) => caricoTesto = testo,
+                  validator: (testo) {
+                    // Campo vuoto = va bene: in Salva diventa 0 kg.
+                    if (testo == null || testo.trim().isEmpty) {
+                      return null;
+                    }
+                    // Come in Salva: virgola → punto, poi numero decimale.
+                    final numero = double.tryParse(testo.replaceAll(',', '.'));
+                    if (numero == null || numero < 0) {
+                      return 'Scrivi un numero da 0 in su (es. 62,5)';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -82,11 +168,28 @@ class _SchermataSchedaState extends State<SchermataScheda> {
             ),
             TextButton(
               onPressed: () {
-                // PROVVISORIO: serie e ripetizioni fisse finché
-                // non aggiungiamo i loro campi (sotto-passo 3).
+                final tuttoOk = chiaveModulo.currentState!.validate();
+                if (!tuttoOk) {
+                  return; // esce subito: niente salvataggio, finestra aperta
+                }
+                // Dal testo ai numeri. tryParse dà null se il testo
+                // non è un numero valido (es. vuoto o "abc");
+                // ?? 0 vuol dire "se è null, usa 0".
+                final serie = int.tryParse(serieTesto) ?? 0;
+                final ripetizioni = int.tryParse(ripetizioniTesto) ?? 0;
+                // In Italia si scrive 62,5 ma Dart vuole 62.5:
+                // sostituiamo la virgola col punto prima di convertire.
+                final carico =
+                    double.tryParse(caricoTesto.replaceAll(',', '.')) ?? 0;
+
                 setState(() {
                   giorno.esercizi.add(
-                    Esercizio(nome: nome, serie: 3, ripetizioni: 10),
+                    Esercizio(
+                      nome: nome,
+                      serie: serie,
+                      ripetizioni: ripetizioni,
+                      carico: carico,
+                    ),
                   );
                 });
                 Navigator.pop(context); // chiude la finestra
