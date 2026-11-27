@@ -2,7 +2,7 @@
 
 > **Per Claude:** leggi questo file all'inizio di ogni sessione, insieme a `CLAUDE.md`.
 > Aggiornalo alla fine di ogni sessione (o quando Matteo lo chiede).
-> Ultimo aggiornamento: **26/11/2026**, ultimo commit `28234b7 aggiunta esercizio`.
+> Ultimo aggiornamento: **27/11/2026**, passi 5 e 6 completati (da committare se `git status` mostra modifiche).
 
 ---
 
@@ -11,7 +11,7 @@
 Matteo **non conosce Dart/Flutter**: lo sta imparando costruendo Balance.
 Il metodo usato finora gli è piaciuto e va mantenuto **identico**:
 
-1. **Un sotto-passo alla volta**, piccolo e provabile subito nell'app. Un solo concetto nuovo per volta (al massimo due, legati tra loro).
+1. **Un sotto-passo alla volta**, piccolo e provabile subito nell'app. Un solo concetto nuovo per volta (al massimo due, legati tra loro). I passi grandi si dividono (es. 5a, 5b, 5c).
 2. Per ogni sotto-passo:
    - spiega **l'idea** prima del codice (cosa vogliamo ottenere, perché si fa così), con disegni ASCII della schermata quando aiutano;
    - indica il **punto esatto** del file dove scrivere ("tra la riga X e la riga Y", mostrando le righe vicine);
@@ -19,62 +19,55 @@ Il metodo usato finora gli è piaciuto e va mantenuto **identico**:
    - spiega **riga per riga** le parti nuove, partendo da zero (cos'è, a cosa serve, analogia semplice), e collega ai concetti che ha già visto ("come in `_CardAvanzamento`...");
    - di' **come provarlo**: `r` (hot reload, cambi di aspetto) oppure `R` (hot restart, quando cambiano i dati iniziali) e cosa deve vedere, inclusi i difetti "previsti" che sistemeremo dopo.
 3. Chiudi con: **"Dimmi 'fatto' e ricontrollo, oppure 'fai tu'"**.
-   - **"fatto" / "controlla"** → leggi il file (`git diff`, `sed -n`), lancia `flutter analyze`, conferma cosa va bene, segnala errori traducendo i messaggi in italiano semplice. Spesso **dimentica di salvare** (Cmd+S): se il file su disco non ha le modifiche, suggeriscilo.
+   - **"fatto" / "controlla" / "correggi errori"** → leggi il file (`git diff`, `sed -n`), lancia `flutter analyze`, conferma cosa va bene, segnala errori traducendo i messaggi in italiano semplice. Spesso **dimentica di salvare** (Cmd+S) o applica solo **una parte** del passo: se mancano pezzi, dillo. "Correggi errori" a volte significa "sistema i difetti previsti": se `analyze` è pulito, chiedi cosa vede.
    - **"fai tu"** → fai tu la modifica con lo stesso codice spiegato, lancia `flutter analyze`, ricorda `r` o `R`.
-4. Dopo ogni passo funzionante, suggerisci un **commit** (con il comando pronto). Non committare senza che lo chieda.
-5. Rispetta le sue **scelte di design** anche se diverse dalla tua proposta, e spiega se semplificano (es. "0 kg" invece di "Corpo libero" → più semplice, gestisce anche la zavorra).
-6. Se sbagli una spiegazione, **ammettilo** chiaramente e spiega il motivo vero.
-7. Piccoli ritocchi di stile (commenti vecchi, righe vuote, `// ` con lo spazio) segnalali come **facoltativi**, in breve.
+   - Se chiede di **rispiegare**, rifallo partendo dall'idea, senza codice, con un'analogia.
+4. Dopo ogni passo funzionante, suggerisci un **commit** (con il comando pronto). Non committare senza che lo chieda. Spesso si dimentica: ricordaglielo prima di iniziare un passo nuovo.
+5. Rispetta le sue **scelte di design** anche se diverse dalla tua proposta, e spiega se semplificano.
+6. Se sbagli una spiegazione o una previsione, **ammettilo** chiaramente e spiega il motivo vero.
+7. Piccoli ritocchi di stile (commenti vecchi, righe vuote) segnalali come **facoltativi**, in breve.
 8. Rispondi sempre in **italiano**.
+9. Matteo prova l'app anche **sull'iPhone** (Safari): considera i limiti di Safari iOS.
 
 ---
 
 ## 2. Stato del codice
 
 ### File
-- `lib/main.dart` – app, tema, barra di navigazione in basso.
-- `lib/tema.dart` – colori e tema (card con `margin: EdgeInsets.zero`: gli spazi si decidono nelle schermate; `FilledButton` largo quanto il contenitore, alto 48).
-- `lib/scheda.dart` – modello dati (logica separata dalla UI):
+- `lib/main.dart` – app, tema, barra di navigazione in basso. `Scaffold` con `resizeToAvoidBottomInset: false` (la pagina non si accorcia con la tastiera).
+- `lib/tema.dart` – colori e tema (card con `margin: EdgeInsets.zero`; `FilledButton` largo quanto il contenitore, alto 48).
+- `lib/scheda.dart` – modello dati (logica separata dalla UI), campi tutti `final`:
   - `Esercizio` (nome, serie, ripetizioni, carico `double`; 0 = corpo libero) + `volume()`.
-  - `GiornoAllenamento` (nome es. "Giorno A", **tipo** es. "Upper"/"Lower"/"Full-Body", esercizi).
+  - `GiornoAllenamento` (nome es. "Giorno A", **tipo** es. "Upper", esercizi).
   - `Scheda` (giorni, dataInizio, durataSettimane) + getter `settimanaCorrente`, `programmazioneFinita`.
 - `lib/schermata_scheda.dart` – sezione Scheda:
-  - `schedaEsempio`: dati finti, **non più `const`** (liste modificabili).
-  - Card "Settimana X di N" con barra (`_CardAvanzamento`).
-  - Selettore giorni A/B/C (`SegmentedButton`, stato `_giornoSelezionato`).
-  - Titolo con il **tipo** del giorno (17 semibold) sopra le card.
-  - Card esercizi **attaccate tra loro** (scelta di Matteo: niente spazio tra le card): a sinistra nome + "serie × ripetizioni" grigio, a destra il peso "60 kg" con lo stesso stile del nome.
-  - Pulsante "Aggiungi esercizio" (`FilledButton.icon`) → `_apriModuloEsercizio()`.
-  - `_apriModuloEsercizio()`: `AlertDialog` con campo **Nome** (`TextField` + `onChanged` → variabile `nome`), pulsanti Annulla / Salva. Salva aggiunge `Esercizio(nome: nome, serie: 3, ripetizioni: 10)` (**serie e ripetizioni ancora fisse, provvisorie**).
+  - `schedaEsempio`: dati finti, liste modificabili (non `const`).
+  - Card "Settimana X di N" (`_CardAvanzamento`), selettore giorni (`SegmentedButton`, stato `_giornoSelezionato`), titolo con il **tipo** del giorno.
+  - Card esercizi attaccate tra loro, **toccabili** (`Card` con `clipBehavior: Clip.antiAlias` + `InkWell`) → aprono il modulo in modifica.
+  - `_apriModuloEsercizio([Esercizio? esistente])`: `AlertDialog` **in alto** (`alignment: Alignment.topCenter`, evita lo scorrimento della pagina con la tastiera iPhone), `Form` + `GlobalKey<FormState>`, 4 `TextFormField` con `initialValue` e `validator`:
+    - Nome obbligatorio; Serie e Ripetizioni interi ≥ 1 ("Almeno 1"); Kg vuoto = 0, altrimenti numero ≥ 0 con virgola o punto.
+    - Titolo "Nuovo esercizio" / "Modifica esercizio". In modifica, Kg a 0 → campo vuoto (scelta di Matteo).
+    - Salva: `validate()`, conversione con `tryParse ?? 0`, poi `.add` (nuovo) oppure `indexOf` + `lista[posizione] = nuovo` (modifica).
+    - Pulsante rosso **Elimina** (solo in modifica, collection `if`) → `_confermaEliminazione(giorno, esercizio)`: finestra "Eliminare X?", `remove` + due `Navigator.pop`.
 
 ### Decisioni prese
-- Il peso si mostra come numero anche quando è 0 ("0 kg" = corpo libero; i kg positivi possono essere zavorra). Niente "Corpo libero".
-- Sul web `60.0` viene mostrato come `60` (Dart → JavaScript), quindi nessuna formattazione del peso necessaria.
-- `nome` del giorno resta corto (va nei pulsanti A/B/C); `tipo` è libero e lo inserirà l'utente.
-- Finestra di inserimento = `AlertDialog` (gestisce da sola la tastiera); pulsanti nella finestra = `TextButton` (un `FilledButton` col tema attuale sarebbe largo infinito).
+- Il peso si mostra come numero anche quando è 0 ("0 kg" = corpo libero).
+- Sul web `60.0` viene mostrato come `60`: nessuna formattazione del peso necessaria.
+- `nome` del giorno resta corto (va nei pulsanti); `tipo` è libero e lo inserisce l'utente.
+- Finestre = `AlertDialog` con pulsanti `TextButton`. Controlli con `Form` + `validator` (scelto anche per `initialValue`).
+- `autofocus` resta: su iPhone Safari non apre la tastiera (limite di iOS: la tastiera si apre solo con un tocco diretto), sul computer sì.
 
 ### Concetti Dart/Flutter già spiegati
-`ListView`/`children`, widget e `child`, `const` (e il suo "contagio"), `final` vs `var`, collection `for`, `Card`, `Padding`, `EdgeInsets.all/only`, `Column`, `Row`, `Expanded`, `crossAxisAlignment`, `SizedBox`, interpolazione `'${...}'` / `'$x'`, `style` + `copyWith` + `?.`, getter, `if` / `==` / `return`, `%`, `setState` (con `=>` e con `{ }`), `.add`, `required` nel costruttore, errori dell'analizzatore, metodi e `void`, passare una funzione senza `()`, `showDialog` / `builder`, `AlertDialog`, `Navigator.pop` (pila di fogli), `TextField`, `onChanged`, variabili "condivise" dalle funzioni interne, ambito (scope) delle variabili.
+`ListView`/`children`, widget e `child`, `const` (e il suo "contagio"), `final` vs `var`, collection `for` e collection `if`, `Card`, `Padding`, `EdgeInsets`, `Column`, `Row`, `Expanded`, `crossAxisAlignment`, `mainAxisSize`, `SizedBox`, interpolazione, `style` + `copyWith` + `?.`, getter, `if`/`else`/`==`/`!=`/`||`/`!`/`return`, `? :`, `%`, `setState`, liste: `.add`, `.remove`, `indexOf`, `lista[i] = x`, `required`, parametri facoltativi `[ ]`, tipi con `?` (`String?`, `Esercizio?`), `null`, `??`, `!` dopo un valore, metodi e `void`, passare una funzione senza `()` vs `() => f(x)`, `showDialog`/`builder`, `AlertDialog` (+ `alignment`), `Navigator.pop` (pila di fogli), `TextField`/`TextFormField`, `onChanged`, `initialValue`, `keyboardType`, `Form`, `GlobalKey`, `validator`, `validate()`, `tryParse`, `replaceAll`, `trim`, `isEmpty`, `InkWell`/`onTap`, `clipBehavior`, `TextButton.styleFrom`, `colorScheme.error`, ambito delle variabili.
 
 ---
 
 ## 3. Prossimi passi
 
-### ▶ Sotto-passo 3 (spiegato ma NON ancora applicato): campi Serie, Ripetizioni, Kg
-Nella finestra di `_apriModuloEsercizio()`:
-- variabili `serieTesto`, `ripetizioniTesto`, `caricoTesto` (sotto `var nome = '';`);
-- `content` diventa `Column(mainAxisSize: MainAxisSize.min, ...)`: Nome; `Row` con Serie | Ripetizioni (`Expanded`, `keyboardType: TextInputType.number`); Kg (`TextInputType.numberWithOptions(decimal: true)`, label "Kg (0 = corpo libero)");
-- in Salva: `int.tryParse(...) ?? 0`, `double.tryParse(caricoTesto.replaceAll(',', '.')) ?? 0` (verificato: `?? 0` dà un `double`), poi `Esercizio(nome:, serie:, ripetizioni:, carico:)`.
-- Concetti nuovi: testo ≠ numero, `tryParse`, `null`, `??`, `replaceAll`, `mainAxisSize`, `keyboardType`.
-- Prove: normale, "62,5", kg vuoto/0, serie vuota (→ 0, difetto previsto).
-- Matteo deve ancora decidere se scriverlo lui ("fatto") o farlo fare a Claude ("fai tu"): ripresentagli il sotto-passo.
-
-### Poi, in ordine
-4. **Controlli** nel modulo: nome vuoto, serie/ripetizioni vuote o 0, testo non numerico → non salvare e mostrare l'errore sotto il campo (probabile uso di `errorText` o `Form` + `validator`: scegliere la via più semplice e spiegarla).
-5. **Modificare ed eliminare** un esercizio (es. tocco sulla card → stessa finestra precompilata; eliminazione con conferma).
-6. **Gestire i giorni**: aggiungere/rinominare/eliminare un giorno, con **nome** e **tipo** (cosa allena) inseriti dall'utente.
-7. **Data di inizio e durata** della programmazione modificabili.
-8. **Salvataggio sul dispositivo** (ora i dati si perdono ricaricando la pagina). Prima di aggiungere un pacchetto (probabilmente `shared_preferences`) spiegare a cosa serve e le alternative. Probabilmente spostare la scheda nello stato / in un punto unico.
-9. **Allegato** foto/PDF della scheda originale (ultimo, è solo un riferimento).
+1. ~~Campi Serie/Ripetizioni/Kg~~ ✓ · ~~Controlli~~ ✓ · ~~Modificare ed eliminare esercizi~~ ✓
+2. ~~Gestire i giorni~~ ✓ (passo 6): pulsante **+** (`IconButton.filledTonal`) accanto ai giorni → `_apriModuloGiorno([GiornoAllenamento? esistente])`; matita accanto al tipo → stessa finestra in modifica (tiene `esercizi: esistente.esercizi`); Elimina solo se `giorni.length > 1` (`&&`), `_confermaEliminazioneGiorno` → `remove` e `_giornoSelezionato = 0`. Attenzione: con molti giorni il `SegmentedButton` può non entrare su iPhone SE.
+3. ~~Data di inizio e durata~~ ✓ (passo 7): matita sulla card avanzamento (`onModifica`, `VoidCallback`) → `_apriModuloProgrammazione` con `StatefulBuilder` + `await showDatePicker` (niente date future: `lastDate: DateTime.now()`); `schedaEsempio` è `var` e viene sostituita. Card mostra "dal 3/11/2026" (`_testoData`). App in italiano con `flutter_localizations` (sdk) in `main.dart`.
+4. ▶ **Salvataggio sul dispositivo** (passo 8; ora i dati si perdono ricaricando la pagina). Prima di aggiungere un pacchetto (probabilmente `shared_preferences`) spiegare a cosa serve e le alternative. Probabilmente spostare la scheda nello stato / in un punto unico. Decidere cosa vede chi apre l'app la prima volta (consigliato: scheda vuota con un giorno, non l'esempio).
+5. **Allegato** foto/PDF della scheda originale: consigliato **rimandarlo** dopo la sezione Oggi (spazio limitato sul web).
 
 Poi, secondo `CLAUDE.md`: Oggi → Calendario → Progressi e scarico.

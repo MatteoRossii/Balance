@@ -11,11 +11,16 @@ import 'package:flutter/material.dart';
 import 'scheda.dart';
 import 'tema.dart';
 
+// Scrive una data come "3/11/2026". Una sola funzione usata sia nella
+// card sia nella finestra: per cambiare formato basta cambiarla qui.
+String _testoData(DateTime data) {
+  return '${data.day}/${data.month}/${data.year}';
+}
+
 // --- 1. DATI DI ESEMPIO ---------------------------------------
-// È `final` e non `const` perché DateTime(...) non può essere const.
-// DOVE OPERARE: cambia data e durata per provare la barra
-// (es. durataSettimane: 3 → programmazione finita).
-final schedaEsempio = Scheda(
+// È `var` perché quando cambi data o durata la sostituiamo
+// con una scheda nuova (i campi di Scheda sono final).
+var schedaEsempio = Scheda(
   dataInizio: DateTime(2026, 11, 3),
   durataSettimane: 8,
   giorni: [
@@ -57,7 +62,7 @@ class _SchermataSchedaState extends State<SchermataScheda> {
   int _giornoSelezionato = 0;
   // Apre la finestra per inserire un nuovo esercizio.
   // Per ora è vuota: i campi li aggiungiamo nei prossimi passi.
-  void _apriModuloEsercizio() {
+  void _apriModuloEsercizio([Esercizio? esistente]) {
     // Il giorno a cui aggiungere l'esercizio (quello scelto con A/B/C).
     final giorno = schedaEsempio.giorni[_giornoSelezionato];
 
@@ -67,6 +72,13 @@ class _SchermataSchedaState extends State<SchermataScheda> {
     var serieTesto = '';
     var ripetizioniTesto = '';
     var caricoTesto = '';
+
+    if (esistente != null) {
+      nome = esistente.nome;
+      serieTesto = '${esistente.serie}';
+      ripetizioniTesto = '${esistente.ripetizioni}';
+      caricoTesto = esistente.carico == 0 ? '' : '${esistente.carico}';
+    }
 
     // "Telecomando" del modulo: con questa chiave, quando premi Salva,
     // possiamo dire al Form "controlla tutti i campi".
@@ -79,7 +91,10 @@ class _SchermataSchedaState extends State<SchermataScheda> {
           // In alto invece che al centro: così i campi restano sopra
           // la tastiera dell'iPhone e Safari non fa scorrere la pagina.
           alignment: Alignment.topCenter,
-          title: const Text('Nuovo esercizio'),
+          // Titolo diverso se stiamo aggiungendo o modificando.
+          title: Text(
+            esistente == null ? 'Nuovo esercizio' : 'Modifica esercizio',
+          ),
           content: Form(
             key: chiaveModulo, // attacchiamo il "telecomando" al modulo
             child: Column(
@@ -89,6 +104,7 @@ class _SchermataSchedaState extends State<SchermataScheda> {
               children: [
                 // TextFormField = TextField che sa farsi controllare dal Form.
                 TextFormField(
+                  initialValue: nome,
                   autofocus: true,
                   decoration: const InputDecoration(labelText: 'Nome'),
                   onChanged: (testo) => nome = testo,
@@ -106,6 +122,7 @@ class _SchermataSchedaState extends State<SchermataScheda> {
                   children: [
                     Expanded(
                       child: TextFormField(
+                        initialValue: serieTesto,
                         // Su iPhone apre il tastierino numerico.
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(labelText: 'Serie'),
@@ -124,6 +141,7 @@ class _SchermataSchedaState extends State<SchermataScheda> {
                     const SizedBox(width: 16),
                     Expanded(
                       child: TextFormField(
+                        initialValue: ripetizioniTesto,
                         keyboardType: TextInputType.number,
                         decoration:
                             const InputDecoration(labelText: 'Ripetizioni'),
@@ -141,6 +159,7 @@ class _SchermataSchedaState extends State<SchermataScheda> {
                   ],
                 ),
                 TextFormField(
+                  initialValue: caricoTesto,
                   // Tastierino numerico con la virgola (per 62,5 kg).
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
@@ -165,6 +184,15 @@ class _SchermataSchedaState extends State<SchermataScheda> {
             ),
           ),
           actions: [
+            // Elimina c'è solo quando modifichi un esercizio esistente.
+            if (esistente != null)
+              TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                ),
+                onPressed: () => _confermaEliminazione(giorno, esistente),
+                child: const Text('Elimina'),
+              ),
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('Annulla'),
@@ -185,19 +213,317 @@ class _SchermataSchedaState extends State<SchermataScheda> {
                 final carico =
                     double.tryParse(caricoTesto.replaceAll(',', '.')) ?? 0;
 
+                // L'esercizio con i dati scritti nei campi.
+                final nuovo = Esercizio(
+                  nome: nome,
+                  serie: serie,
+                  ripetizioni: ripetizioni,
+                  carico: carico,
+                );
+
                 setState(() {
-                  giorno.esercizi.add(
-                    Esercizio(
-                      nome: nome,
-                      serie: serie,
-                      ripetizioni: ripetizioni,
-                      carico: carico,
-                    ),
-                  );
+                  if (esistente == null) {
+                    // Esercizio nuovo: lo aggiungiamo in fondo.
+                    giorno.esercizi.add(nuovo);
+                  } else {
+                    // Modifica: troviamo la posizione di quello vecchio
+                    // (0, 1, 2...) e mettiamo il nuovo al suo posto.
+                    final posizione = giorno.esercizi.indexOf(esistente);
+                    giorno.esercizi[posizione] = nuovo;
+                  }
                 });
                 Navigator.pop(context); // chiude la finestra
               },
               child: const Text('Salva'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _confermaEliminazione(GiornoAllenamento giorno, Esercizio esercizio) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Eliminare ${esercizio.nome}?'),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(context), // chiude solo la conferma
+              child: const Text('Annulla'),
+            ),
+            TextButton(
+              // Rosso: lo stesso colore dei messaggi d'errore del Form.
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: () {
+                setState(() {
+                  giorno.esercizi.remove(esercizio);
+                });
+                Navigator.pop(context); // chiude la conferma
+                Navigator.pop(context); // chiude la finestra di modifica
+              },
+              child: const Text('Elimina'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Apre la finestra per aggiungere un nuovo giorno alla scheda.
+  void _apriModuloGiorno([GiornoAllenamento? esistente]) {
+    // Cosa scrive l'utente nei due campi.
+    var nome = '';
+    var tipo = '';
+
+    // Se stiamo modificando, partiamo dai valori del giorno.
+    if (esistente != null) {
+      nome = esistente.nome;
+      tipo = esistente.tipo;
+    }
+
+    // "Telecomando" del modulo, come nella finestra degli esercizi.
+    final chiaveModulo = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          // In alto, per la tastiera dell'iPhone (come per gli esercizi).
+          alignment: Alignment.topCenter,
+          title: Text(esistente == null ? 'Nuovo giorno' : 'Modifica giorno'),
+          content: Form(
+            key: chiaveModulo,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  initialValue: nome,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Nome (es. Giorno D)',
+                  ),
+                  onChanged: (testo) => nome = testo,
+                  validator: (testo) {
+                    if (testo == null || testo.trim().isEmpty) {
+                      return 'Scrivi il nome';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  initialValue: tipo,
+                  decoration: const InputDecoration(
+                    labelText: 'Tipo (es. Upper, Lower, Full-Body)',
+                  ),
+                  onChanged: (testo) => tipo = testo,
+                  validator: (testo) {
+                    if (testo == null || testo.trim().isEmpty) {
+                      return 'Scrivi il tipo';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            // Elimina c'è solo quando modifichi un giorno
+            // E non è l'ultimo rimasto (la scheda deve avere almeno un giorno).
+            if (esistente != null && schedaEsempio.giorni.length > 1)
+              TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                ),
+                onPressed: () => _confermaEliminazioneGiorno(esistente),
+                child: const Text('Elimina'),
+              ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Annulla'),
+            ),
+            TextButton(
+              onPressed: () {
+                final tuttoOk = chiaveModulo.currentState!.validate();
+                if (!tuttoOk) {
+                  return; // errori: la finestra resta aperta
+                }
+                setState(() {
+                  if (esistente == null) {
+                    schedaEsempio.giorni.add(
+                      GiornoAllenamento(
+                        nome: nome.trim(),
+                        tipo: tipo.trim(),
+                        // Lista vuota MODIFICABILE (senza const):
+                        // dopo ci aggiungeremo gli esercizi.
+                        esercizi: [],
+                      ),
+                    );
+                    // Seleziona subito il giorno appena creato,
+                    // che è l'ultimo della lista.
+                    _giornoSelezionato = schedaEsempio.giorni.length - 1;
+                  } else {
+                    // Modifica: stesso posto, nuovo nome e tipo,
+                    // ma GLI STESSI esercizi del giorno vecchio.
+                    final posizione = schedaEsempio.giorni.indexOf(esistente);
+                    schedaEsempio.giorni[posizione] = GiornoAllenamento(
+                      nome: nome.trim(),
+                      tipo: tipo.trim(),
+                      esercizi: esistente.esercizi,
+                    );
+                  }
+                });
+                Navigator.pop(context); // chiude la finestra
+              },
+              child: const Text('Salva'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+// Apre la finestra per cambiare durata e data di inizio della programmazione.
+  void _apriModuloProgrammazione() {
+    // Partiamo dai valori attuali.
+    var durataTesto = '${schedaEsempio.durataSettimane}';
+    var dataInizio = schedaEsempio.dataInizio;
+
+    final chiaveModulo = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        // StatefulBuilder: dà alla finestra un suo setState
+        // (setStateFinestra) per ridisegnarla quando cambi la data.
+        return StatefulBuilder(
+          builder: (context, setStateFinestra) {
+            return AlertDialog(
+              alignment: Alignment.topCenter,
+              title: const Text('Programmazione'),
+              content: Form(
+                key: chiaveModulo,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      initialValue: durataTesto,
+                      autofocus: true,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Durata (settimane)',
+                      ),
+                      onChanged: (testo) => durataTesto = testo,
+                      validator: (testo) {
+                        final numero = int.tryParse(testo ?? '');
+                        if (numero == null || numero < 1) {
+                          return 'Almeno 1';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // Data di inizio a sinistra, pulsante "Cambia" a destra.
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Inizio: ${_testoData(dataInizio)}',
+                          ),
+                        ),
+                        TextButton(
+                          // async: questa funzione sa "aspettare" (await).
+                          onPressed: () async {
+                            // Apre il calendario e ASPETTA la scelta.
+                            // Se premi Annulla, `scelta` è null.
+                            final scelta = await showDatePicker(
+                              context: context,
+                              initialDate: dataInizio,
+                              firstDate: DateTime(2020),
+                              // Niente date future: la scheda si inserisce
+                              // quando la si inizia.
+                              lastDate: DateTime.now(),
+                              helpText: 'Data di inizio',
+                            );
+                            if (scelta != null) {
+                              // Ridisegna la finestra con la nuova data.
+                              setStateFinestra(() => dataInizio = scelta);
+                            }
+                          },
+                          child: const Text('Cambia'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Annulla'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    final tuttoOk = chiaveModulo.currentState!.validate();
+                    if (!tuttoOk) {
+                      return;
+                    }
+                    final durata = int.tryParse(durataTesto) ?? 1;
+                    setState(() {
+                      // Scheda nuova al posto della vecchia: STESSI giorni,
+                      // nuova data e nuova durata.
+                      schedaEsempio = Scheda(
+                        giorni: schedaEsempio.giorni,
+                        dataInizio: dataInizio,
+                        durataSettimane: durata,
+                      );
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Salva'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Chiede conferma e, se confermi, elimina il giorno con i suoi esercizi.
+  void _confermaEliminazioneGiorno(GiornoAllenamento giorno) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Eliminare ${giorno.nome}?'),
+          // Avviso: insieme al giorno spariscono anche i suoi esercizi.
+          content: const Text('Verranno eliminati anche i suoi esercizi.'),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(context), // chiude solo la conferma
+              child: const Text('Annulla'),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: () {
+                setState(() {
+                  schedaEsempio.giorni.remove(giorno);
+                  // Il giorno selezionato potrebbe non esistere più
+                  // (es. eri sul 4° e ora ce ne sono 3): torniamo al primo.
+                  _giornoSelezionato = 0;
+                });
+                Navigator.pop(context); // chiude la conferma
+                Navigator.pop(context); // chiude la finestra del giorno
+              },
+              child: const Text('Elimina'),
             ),
           ],
         );
@@ -228,76 +554,111 @@ class _SchermataSchedaState extends State<SchermataScheda> {
         ),
         const SizedBox(height: 16), // spazio tra blocchi: 16
 
-        _CardAvanzamento(scheda: scheda),
+        _CardAvanzamento(
+          scheda: scheda,
+          onModifica: _apriModuloProgrammazione,
+        ),
         const SizedBox(height: 16),
 
         // Selettore dei giorni A / B / C.
         // <int>: il valore di ogni pulsante è la posizione del giorno
         // nella lista (0, 1, 2), come _giornoSelezionato.
-        SegmentedButton<int>(
-          // Un pulsante per ogni giorno della scheda ("collection for"):
-          // se la scheda avesse 4 giorni, i pulsanti diventerebbero 4 da soli.
-          segments: [
-            for (var i = 0; i < scheda.giorni.length; i++)
-              ButtonSegment(value: i, label: Text(scheda.giorni[i].nome)),
+        // A sinistra i giorni, a destra il pulsante per aggiungerne uno.
+        Row(
+          children: [
+            Expanded(
+              child: SegmentedButton<int>(
+                // Un pulsante per ogni giorno della scheda ("collection for"):
+                // se la scheda avesse 4 giorni, i pulsanti diventerebbero 4 da soli.
+                segments: [
+                  for (var i = 0; i < scheda.giorni.length; i++)
+                    ButtonSegment(value: i, label: Text(scheda.giorni[i].nome)),
+                ],
+                // Vuole un Set (insieme) perché permetterebbe anche più selezioni;
+                // {x} è un Set con un solo elemento.
+                selected: {_giornoSelezionato},
+                // Chiamata quando tocchi un pulsante: `nuovi` è il Set con la
+                // nuova selezione (es. {2} se tocchi C). .first prende l'unico valore.
+                // setState ridisegna lo schermo con il nuovo giorno.
+                onSelectionChanged: (nuovi) {
+                  setState(() => _giornoSelezionato = nuovi.first);
+                },
+                // Toglie la ✓ accanto alla lettera selezionata.
+                showSelectedIcon: false,
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Pulsante tondo con il +, sfondo verde chiaro.
+            IconButton.filledTonal(
+              onPressed: _apriModuloGiorno,
+              icon: const Icon(Icons.add),
+              tooltip: 'Aggiungi giorno',
+            ),
           ],
-          // Vuole un Set (insieme) perché permetterebbe anche più selezioni;
-          // {x} è un Set con un solo elemento.
-          selected: {_giornoSelezionato},
-          // Chiamata quando tocchi un pulsante: `nuovi` è il Set con la
-          // nuova selezione (es. {2} se tocchi C). .first prende l'unico valore.
-          // setState ridisegna lo schermo con il nuovo giorno.
-          onSelectionChanged: (nuovi) {
-            setState(() => _giornoSelezionato = nuovi.first);
-          },
-          // Toglie la ✓ accanto alla lettera selezionata.
-          showSelectedIcon: false,
         ),
         const SizedBox(height: 16), //lascia spazio tra i pulsanti e l'esercizio
-        Text(
-          giorno.tipo,
-          style: testi.titleMedium?.copyWith(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
+        // Tipo del giorno a sinistra, matita per modificarlo a destra.
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                giorno.tipo,
+                style: testi.titleMedium?.copyWith(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: () => _apriModuloGiorno(giorno),
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Modifica giorno',
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         for (final esercizio in giorno.esercizi)
           Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  // SINISTRA: nome + serie × ripetizioni.
-                  // Expanded prende tutto lo spazio libero e spinge il peso a destra.
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          esercizio.nome,
-                          style: testi.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
+            // Taglia l'effetto del tocco lungo gli angoli arrotondati.
+            clipBehavior: Clip.antiAlias,
+            // InkWell: rende toccabile ciò che contiene, con l'effetto "onda".
+            child: InkWell(
+              onTap: () => _apriModuloEsercizio(esercizio),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    // SINISTRA: nome + serie × ripetizioni.
+                    // Expanded prende tutto lo spazio libero e spinge il peso a destra.
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            esercizio.nome,
+                            style: testi.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${esercizio.serie} × ${esercizio.ripetizioni}',
-                          style: testi.bodyMedium?.copyWith(
-                            color: coloreTestoSecondario,
+                          const SizedBox(height: 4),
+                          Text(
+                            '${esercizio.serie} × ${esercizio.ripetizioni}',
+                            style: testi.bodyMedium?.copyWith(
+                              color: coloreTestoSecondario,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  // DESTRA: il peso, con lo stesso stile del nome.
-                  Text(
-                    '${esercizio.carico} kg',
-                    style: testi.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                    // DESTRA: il peso, con lo stesso stile del nome.
+                    Text(
+                      '${esercizio.carico} kg',
+                      style: testi.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -319,9 +680,12 @@ class _SchermataSchedaState extends State<SchermataScheda> {
 // Il trattino basso iniziale (_CardAvanzamento) la rende privata:
 // si può usare solo dentro questo file.
 class _CardAvanzamento extends StatelessWidget {
-  const _CardAvanzamento({required this.scheda});
+  const _CardAvanzamento({required this.scheda, required this.onModifica});
 
   final Scheda scheda;
+  // La funzione da chiamare quando tocchi la matita
+  // (la decide chi usa la card, cioè la schermata).
+  final VoidCallback onModifica;
 
   @override
   Widget build(BuildContext context) {
@@ -348,12 +712,30 @@ class _CardAvanzamento extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Titolo card: 17 semibold.
-            Text(
-              titolo,
-              style: testi.titleMedium?.copyWith(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    titolo,
+                    style: testi.titleMedium?.copyWith(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                // Data di inizio, piccola e grigia, accanto alla matita.
+                Text(
+                  'dal ${_testoData(scheda.dataInizio)}',
+                  style: testi.bodyMedium?.copyWith(
+                    color: coloreTestoSecondario,
+                  ),
+                ),
+                IconButton(
+                  onPressed: onModifica,
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Modifica programmazione',
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             LinearProgressIndicator(

@@ -8,6 +8,8 @@
 // ============================================================
 
 import 'package:flutter/material.dart';
+// Traduzioni di Flutter (calendario, pulsanti di sistema...).
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 // Importa i colori e lo stile (card, pulsanti, barra) da lib/tema.dart.
 import 'tema.dart';
@@ -35,6 +37,18 @@ class MyApp extends StatelessWidget {
       title: 'BALANCE',
       // Colori e stile: sono definiti in lib/tema.dart.
       theme: temaBalance,
+      // ---- LINGUA: tutta l'app in italiano ----
+      // I "delegates" sono i dizionari con le traduzioni dei testi di
+      // sistema: Material (calendario, pulsanti), widget base, Cupertino.
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      // Le lingue che l'app sa parlare (per ora solo italiano)...
+      supportedLocales: const [Locale('it')],
+      // ...e quella da usare sempre, qualunque sia la lingua del telefono.
+      locale: const Locale('it'),
       // Prima schermata mostrata all'avvio: la nostra barra di navigazione.
       home: const Navigazione(),
     );
