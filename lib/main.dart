@@ -69,6 +69,10 @@ class _NavigazioneState extends State<Navigazione> {
     // Scaffold = scheletro di una schermata: un corpo (body)
     // e, in basso, la barra di navigazione.
     return Scaffold(
+      // Quando si apre la tastiera la pagina resta ferma: non si
+      // accorcia e la barra in basso non sale. Le finestre (AlertDialog)
+      // si spostano da sole sopra la tastiera.
+      resizeToAvoidBottomInset: false,
       // ---- CORPO: la schermata della sezione selezionata ----
       // SafeArea tiene il contenuto lontano da notch e barra di sistema dell'iPhone.
       body: SafeArea(
