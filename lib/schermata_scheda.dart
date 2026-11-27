@@ -2,12 +2,13 @@
 // schermata_scheda.dart – sezione "Scheda" della barra in basso
 //
 // Il file ha 2 parti:
-//   1. schedaEsempio     -> dati finti, finché non potremo inserirli
+//   1. schedaAttuale     -> la scheda mostrata (caricata dal telefono)
 //   2. SchermataScheda   -> cosa si vede sullo schermo
 // ============================================================
 
 import 'package:flutter/material.dart';
 
+import 'archivio.dart';
 import 'scheda.dart';
 import 'tema.dart';
 
@@ -17,30 +18,12 @@ String _testoData(DateTime data) {
   return '${data.day}/${data.month}/${data.year}';
 }
 
-// --- 1. DATI DI ESEMPIO ---------------------------------------
-// È `var` perché quando cambi data o durata la sostituiamo
-// con una scheda nuova (i campi di Scheda sono final).
-var schedaEsempio = Scheda(
-  dataInizio: DateTime(2026, 11, 3),
-  durataSettimane: 8,
-  giorni: [
-    GiornoAllenamento(nome: 'Giorno A', tipo: 'Upper', esercizi: [
-      Esercizio(nome: 'Squat', serie: 4, ripetizioni: 8, carico: 60),
-      Esercizio(nome: 'Panca piana', serie: 4, ripetizioni: 8, carico: 50),
-    ]),
-    GiornoAllenamento(nome: 'Giorno B', tipo: 'Lower', esercizi: [
-      Esercizio(nome: 'Stacco da terra', serie: 3, ripetizioni: 5, carico: 80),
-      // Niente `carico:` → vale 0 grazie a `this.carico = 0` (corpo libero).
-      Esercizio(nome: 'Trazioni', serie: 4, ripetizioni: 6),
-      Esercizio(nome: 'Rematore', serie: 3, ripetizioni: 10, carico: 40),
-    ]),
-    GiornoAllenamento(nome: 'Giorno C', tipo: 'Full-Body', esercizi: [
-      Esercizio(nome: 'Lento avanti', serie: 4, ripetizioni: 8, carico: 30),
-      Esercizio(nome: 'Affondi', serie: 3, ripetizioni: 10, carico: 20),
-      Esercizio(nome: 'Plank', serie: 3, ripetizioni: 1),
-    ]),
-  ],
-);
+// --- 1. LA SCHEDA -------------------------------------------
+// La scheda attuale, quella mostrata e modificata sullo schermo.
+// Parte vuota; all'avvio main() la sostituisce con quella salvata
+// sul telefono (se c'è). È `var` perché quando cambi data o durata
+// la sostituiamo con una scheda nuova (i campi di Scheda sono final).
+var schedaAttuale = schedaVuota();
 
 // --- 2. SCHERMATA ---------------------------------------------
 // StatefulWidget: la schermata deve ricordare quale giorno (A/B/C)
@@ -60,11 +43,20 @@ class _SchermataSchedaState extends State<SchermataScheda> {
   // 0 = A, 1 = B, 2 = C. All'apertura è selezionato il primo.
   // NON è final: deve poter cambiare quando tocchi un altro giorno.
   int _giornoSelezionato = 0;
-  // Apre la finestra per inserire un nuovo esercizio.
-  // Per ora è vuota: i campi li aggiungiamo nei prossimi passi.
+
+  // Da usare al posto di setState quando cambiano i DATI della scheda:
+  // ridisegna la schermata (setState) e poi salva sul telefono.
+  // `modifica` è la funzione con i cambiamenti, la stessa che daresti a setState.
+  void _aggiornaESalva(VoidCallback modifica) {
+    setState(modifica);
+    salvaScheda(schedaAttuale);
+  }
+
+  // Apre la finestra per aggiungere un esercizio,
+  // o per modificarlo/eliminarlo se passi quello esistente.
   void _apriModuloEsercizio([Esercizio? esistente]) {
     // Il giorno a cui aggiungere l'esercizio (quello scelto con A/B/C).
-    final giorno = schedaEsempio.giorni[_giornoSelezionato];
+    final giorno = schedaAttuale.giorni[_giornoSelezionato];
 
     // Qui ricordiamo cosa scrive l'utente nel campo "Nome".
     // `var` e non `final`: il valore cambia a ogni lettera.
@@ -221,7 +213,7 @@ class _SchermataSchedaState extends State<SchermataScheda> {
                   carico: carico,
                 );
 
-                setState(() {
+                _aggiornaESalva(() {
                   if (esistente == null) {
                     // Esercizio nuovo: lo aggiungiamo in fondo.
                     giorno.esercizi.add(nuovo);
@@ -260,7 +252,7 @@ class _SchermataSchedaState extends State<SchermataScheda> {
                 foregroundColor: Theme.of(context).colorScheme.error,
               ),
               onPressed: () {
-                setState(() {
+                _aggiornaESalva(() {
                   giorno.esercizi.remove(esercizio);
                 });
                 Navigator.pop(context); // chiude la conferma
@@ -334,7 +326,7 @@ class _SchermataSchedaState extends State<SchermataScheda> {
           actions: [
             // Elimina c'è solo quando modifichi un giorno
             // E non è l'ultimo rimasto (la scheda deve avere almeno un giorno).
-            if (esistente != null && schedaEsempio.giorni.length > 1)
+            if (esistente != null && schedaAttuale.giorni.length > 1)
               TextButton(
                 style: TextButton.styleFrom(
                   foregroundColor: Theme.of(context).colorScheme.error,
@@ -352,9 +344,9 @@ class _SchermataSchedaState extends State<SchermataScheda> {
                 if (!tuttoOk) {
                   return; // errori: la finestra resta aperta
                 }
-                setState(() {
+                _aggiornaESalva(() {
                   if (esistente == null) {
-                    schedaEsempio.giorni.add(
+                    schedaAttuale.giorni.add(
                       GiornoAllenamento(
                         nome: nome.trim(),
                         tipo: tipo.trim(),
@@ -365,12 +357,12 @@ class _SchermataSchedaState extends State<SchermataScheda> {
                     );
                     // Seleziona subito il giorno appena creato,
                     // che è l'ultimo della lista.
-                    _giornoSelezionato = schedaEsempio.giorni.length - 1;
+                    _giornoSelezionato = schedaAttuale.giorni.length - 1;
                   } else {
                     // Modifica: stesso posto, nuovo nome e tipo,
                     // ma GLI STESSI esercizi del giorno vecchio.
-                    final posizione = schedaEsempio.giorni.indexOf(esistente);
-                    schedaEsempio.giorni[posizione] = GiornoAllenamento(
+                    final posizione = schedaAttuale.giorni.indexOf(esistente);
+                    schedaAttuale.giorni[posizione] = GiornoAllenamento(
                       nome: nome.trim(),
                       tipo: tipo.trim(),
                       esercizi: esistente.esercizi,
@@ -390,8 +382,8 @@ class _SchermataSchedaState extends State<SchermataScheda> {
 // Apre la finestra per cambiare durata e data di inizio della programmazione.
   void _apriModuloProgrammazione() {
     // Partiamo dai valori attuali.
-    var durataTesto = '${schedaEsempio.durataSettimane}';
-    var dataInizio = schedaEsempio.dataInizio;
+    var durataTesto = '${schedaAttuale.durataSettimane}';
+    var dataInizio = schedaAttuale.dataInizio;
 
     final chiaveModulo = GlobalKey<FormState>();
 
@@ -473,11 +465,11 @@ class _SchermataSchedaState extends State<SchermataScheda> {
                       return;
                     }
                     final durata = int.tryParse(durataTesto) ?? 1;
-                    setState(() {
+                    _aggiornaESalva(() {
                       // Scheda nuova al posto della vecchia: STESSI giorni,
                       // nuova data e nuova durata.
-                      schedaEsempio = Scheda(
-                        giorni: schedaEsempio.giorni,
+                      schedaAttuale = Scheda(
+                        giorni: schedaAttuale.giorni,
                         dataInizio: dataInizio,
                         durataSettimane: durata,
                       );
@@ -514,8 +506,8 @@ class _SchermataSchedaState extends State<SchermataScheda> {
                 foregroundColor: Theme.of(context).colorScheme.error,
               ),
               onPressed: () {
-                setState(() {
-                  schedaEsempio.giorni.remove(giorno);
+                _aggiornaESalva(() {
+                  schedaAttuale.giorni.remove(giorno);
                   // Il giorno selezionato potrebbe non esistere più
                   // (es. eri sul 4° e ora ce ne sono 3): torniamo al primo.
                   _giornoSelezionato = 0;
@@ -536,7 +528,7 @@ class _SchermataSchedaState extends State<SchermataScheda> {
     // Gli stili di testo del tema: così le dimensioni restano coerenti
     // in tutta l'app invece di scrivere numeri sparsi.
     final testi = Theme.of(context).textTheme;
-    final scheda = schedaEsempio;
+    final scheda = schedaAttuale;
     final giorno = scheda.giorni[_giornoSelezionato];
 
     // ListView invece di Column: se i contenuti superano l'altezza

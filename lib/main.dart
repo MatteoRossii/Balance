@@ -14,10 +14,25 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 // Importa i colori e lo stile (card, pulsanti, barra) da lib/tema.dart.
 import 'tema.dart';
 import 'schermata_scheda.dart';
+// Lettura della scheda salvata sul telefono.
+import 'archivio.dart';
 
 // --- 1. AVVIO -------------------------------------------------
 // Flutter parte sempre da main(). runApp() mette MyApp sullo schermo.
-void main() {
+// async: prima di mostrare l'app ASPETTIAMO (await) di leggere
+// la scheda salvata sul telefono.
+Future<void> main() async {
+  // Serve prima di usare shared_preferences, quando runApp non è
+  // ancora stato chiamato: "prepara Flutter".
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Se c'è una scheda salvata, diventa la scheda attuale;
+  // altrimenti (prima apertura) resta quella vuota.
+  final salvata = await caricaScheda();
+  if (salvata != null) {
+    schedaAttuale = salvata;
+  }
+
   runApp(const MyApp());
 }
 
