@@ -76,6 +76,9 @@ class _SchermataSchedaState extends State<SchermataScheda> {
       context: context,
       builder: (context) {
         return AlertDialog(
+          // In alto invece che al centro: così i campi restano sopra
+          // la tastiera dell'iPhone e Safari non fa scorrere la pagina.
+          alignment: Alignment.topCenter,
           title: const Text('Nuovo esercizio'),
           content: Form(
             key: chiaveModulo, // attacchiamo il "telecomando" al modulo
