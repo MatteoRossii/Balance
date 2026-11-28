@@ -12,6 +12,7 @@ import 'dart:convert'; // jsonEncode / jsonDecode: mappa ⇄ testo JSON
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'scheda.dart';
+import 'check_in.dart';
 
 // L'etichetta sotto cui salviamo la scheda nell'"armadietto".
 const _chiaveScheda = 'scheda';
@@ -53,4 +54,36 @@ Future<Scheda?> caricaScheda() async {
 Future<void> salvaScheda(Scheda scheda) async {
   final archivio = await SharedPreferences.getInstance();
   await archivio.setString(_chiaveScheda, jsonEncode(scheda.toJson()));
+}
+
+// ---- CHECK-IN ----
+// Etichetta sotto cui salviamo l'elenco dei check-in (uno per giorno).
+const _chiaveCheckIn = 'checkin';
+
+// Legge l'elenco dei check-in. Lista vuota se non c'è niente
+// (prima apertura) o se i dati salvati sono rovinati.
+Future<List<CheckIn>> caricaCheckIn() async {
+  final archivio = await SharedPreferences.getInstance();
+  final testo = archivio.getString(_chiaveCheckIn);
+  if (testo == null) {
+    return []; // niente di salvato
+  }
+  try {
+    // Dal testo a una lista di mappe...
+    final listaMappe = jsonDecode(testo) as List;
+    // ...e da ogni mappa a un CheckIn.
+    return [
+      for (final mappa in listaMappe)
+        CheckIn.fromJson(mappa as Map<String, dynamic>),
+    ];
+  } catch (errore) {
+    return []; // testo illeggibile: si riparte da un elenco vuoto
+  }
+}
+
+// Salva tutto l'elenco: ogni CheckIn → mappa, poi la lista → testo JSON.
+Future<void> salvaCheckIn(List<CheckIn> elenco) async {
+  final archivio = await SharedPreferences.getInstance();
+  final listaMappe = [for (final checkIn in elenco) checkIn.toJson()];
+  await archivio.setString(_chiaveCheckIn, jsonEncode(listaMappe));
 }

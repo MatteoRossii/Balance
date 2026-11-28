@@ -14,6 +14,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 // Importa i colori e lo stile (card, pulsanti, barra) da lib/tema.dart.
 import 'tema.dart';
 import 'schermata_scheda.dart';
+import 'schermata_oggi.dart';
 // Lettura della scheda salvata sul telefono.
 import 'archivio.dart';
 
@@ -32,6 +33,9 @@ Future<void> main() async {
   if (salvata != null) {
     schedaAttuale = salvata;
   }
+
+// Anche l'elenco dei check-in (lista vuota se non ce ne sono).
+  elencoCheckIn = await caricaCheckIn();
 
   runApp(const MyApp());
 }
@@ -117,9 +121,11 @@ class _NavigazioneState extends State<Navigazione> {
             // Se è selezionata "Scheda" (indice 1) mostra la schermata vera,
             // altrimenti ancora il testo segnaposto.
             // `? :` è un if/else in forma breve: condizione ? se vero : se falso
-            child: _indiceSelezionato == 1
-                ? const SchermataScheda()
-                : Center(child: Text(_titoli[_indiceSelezionato])),
+            child: switch (_indiceSelezionato) {
+              0 => const SchermataOggi(),
+              1 => const SchermataScheda(),
+              _ => Center(child: Text(_titoli[_indiceSelezionato])),
+            },
           ),
         ),
       ),
